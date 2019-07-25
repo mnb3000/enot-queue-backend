@@ -26,11 +26,6 @@ export class Student {
   @Column()
   name!: string;
 
-  // @Field(() => [Queue])
-  // @ManyToMany(() => Queue, queue => queue.students, { lazy: true })
-  // @JoinTable()
-  // queues!: Lazy<Queue[]>;
-
   @Field(() => [StudentToQueue])
   @OneToMany(() => StudentToQueue, studentToQueue => studentToQueue.student, { lazy: true, cascade: ['insert'] })
   studentToQueues!: Lazy<StudentToQueue[]>;
@@ -53,12 +48,14 @@ export class Student {
   @Field(() => [QueuePlaceType])
   async queuePlaces(): Promise<QueuePlaceType[]> {
     const queues = await this.queues();
-    return Promise.all(queues.map(async queue => {
+    const studentToQueues = await this.studentToQueuesInQueue();
+    return Promise.all(queues.map(async (queue, i) => {
       const queueStudents = await queue.students();
-      console.log(queueStudents);
+      const uniqueId = studentToQueues[i].studentToQueueId;
       return {
         queueName: queue.name,
         place: findIndex(queueStudents, { id: this.id }) + 1,
+        uniqueId,
       };
     }));
   }

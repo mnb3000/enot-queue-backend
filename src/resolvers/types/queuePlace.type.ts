@@ -7,4 +7,7 @@ export class QueuePlaceType {
 
   @Field()
   place!: number;
+
+  @Field()
+  uniqueId!: number;
 }

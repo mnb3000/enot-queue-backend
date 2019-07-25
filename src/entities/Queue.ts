@@ -42,8 +42,4 @@ export class Queue {
       .filter(studentToQueue => studentToQueue.status === StatusEnum.inQueue)
       .map(studentToQueue => studentToQueue.student));
   }
-
-  // @Field(() => [Student])
-  // @ManyToMany(() => Student, student => student.queues, { lazy: true, cascade: ['insert'] })
-  // students!: Lazy<Student[]>;
 }
