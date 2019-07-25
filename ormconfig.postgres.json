@@ -1,0 +1,11 @@
+{
+  "type": "postgres",
+  "host": "localhost",
+  "port": 5432,
+  "username": "prisma",
+  "password": "prisma",
+  "database": "graphqldb",
+  "synchronize": true,
+  "logging": true,
+  "entities": ["src/entities/index.ts"]
+}
