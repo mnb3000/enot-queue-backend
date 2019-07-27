@@ -1,13 +1,13 @@
-import { Field, ObjectType } from 'type-graphql';
+import { Field, Int, ObjectType } from 'type-graphql';
 
 @ObjectType()
 export class QueuePlaceType {
   @Field()
   queueName!: string;
 
-  @Field()
+  @Field(() => Int)
   place!: number;
 
-  @Field()
+  @Field(() => Int)
   uniqueId!: number;
 }

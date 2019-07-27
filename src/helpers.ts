@@ -1,8 +1,10 @@
-import { getRepository } from 'typeorm';
-import { PubSubEngine } from 'type-graphql';
 import { find } from 'lodash';
+import { PubSubEngine } from 'type-graphql';
+import { getRepository } from 'typeorm';
 import { Queue, Student, StudentToQueue } from './entities';
+import { StatusEnum } from './resolvers/types/status.enum';
 import { SubscriptionTopics } from './resolvers/types/subscriptionTopics';
+import { QueueUpdateFilterPayload } from './resolvers/types/queueUpdateFilter.payload';
 
 export async function seedDatabase() {
   const studentRepository = getRepository(Student);
@@ -28,13 +30,9 @@ export async function seedDatabase() {
   const [queue1, queue2] = queueRepository.create([
     {
       name: '126',
-      nextId: 3,
-      students: [student1, student2],
     },
     {
       name: '121',
-      nextId: 2,
-      students: [student2],
     },
   ]);
 
@@ -71,4 +69,29 @@ export async function publishStudentNotifications(
     };
     await pubSub.publish(SubscriptionTopics.studentUpdate, payload);
   });
+}
+
+export async function publishQueueFilterUpdate(queue: Queue, pubSub: PubSubEngine) {
+  const studentToQueueRepository = getRepository(StudentToQueue);
+  const builder = studentToQueueRepository
+    .createQueryBuilder('studentToQueue')
+    .leftJoinAndSelect('studentToQueue.queue', 'queue', 'queue.id = :queueId', { queueId: queue.id });
+  const upcomingStudentToQueues = await builder
+    .where('studentToQueue.queueId = :queueId', { queueId: queue.id })
+    .andWhere('studentToQueue.status = :status', { status: StatusEnum.inQueue })
+    .orderBy('studentToQueue.createdAt', 'ASC')
+    .take(10)
+    .getMany();
+  const historyStudentToQueues = await builder
+    .where('studentToQueue.queueId = :queueId', { queueId: queue.id })
+    .andWhere('studentToQueue.status != :status', { status: StatusEnum.inQueue })
+    .orderBy('studentToQueue.updatedAt', 'DESC')
+    .take(10)
+    .getMany();
+  const payload: QueueUpdateFilterPayload = {
+    queueId: queue.id,
+    upcomingStudentToQueues,
+    historyStudentToQueues,
+  };
+  await pubSub.publish(SubscriptionTopics.queueFilterUpdate, payload);
 }

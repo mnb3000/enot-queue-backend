@@ -2,7 +2,7 @@ import {
   Column, Entity, OneToMany, PrimaryGeneratedColumn,
 } from 'typeorm';
 import {
-  Field, ID, Int, ObjectType,
+  Field, ID, ObjectType,
 } from 'type-graphql';
 import { Student } from './Student';
 import { Lazy } from '../helpers';
@@ -19,10 +19,6 @@ export class Queue {
   @Field()
   @Column({ unique: true })
   name!: string;
-
-  @Field(() => Int)
-  @Column({ default: 1 })
-  nextId!: number;
 
   @Field(() => [StudentToQueue])
   @OneToMany(() => StudentToQueue, studentToQueue => studentToQueue.queue, { lazy: true, cascade: ['insert'] })

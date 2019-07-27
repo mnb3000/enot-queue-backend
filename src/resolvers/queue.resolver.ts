@@ -8,7 +8,9 @@ import { Queue, Student, StudentToQueue } from '../entities';
 import { QueueInput } from './types/queue.input';
 import { SubscriptionTopics } from './types/subscriptionTopics';
 import { StatusEnum } from './types/status.enum';
-import { publishStudentNotifications } from '../helpers';
+import { publishStudentNotifications, publishQueueFilterUpdate } from '../helpers';
+import { QueueUpdateFilterPayload } from './types/queueUpdateFilter.payload';
+import { QueueUpdateFilterInput } from './types/queueUpdateFilter.input';
 
 @Resolver(Queue)
 export class QueueResolver {
@@ -51,8 +53,11 @@ export class QueueResolver {
     if (studentIndex === -1) throw new Error('Student not in queue!');
     studentToQueues[studentIndex].status = StatusEnum.passed;
     await this.studentToQueueRepository.save(studentToQueues[studentIndex]);
-    await pubSub.publish(SubscriptionTopics.queueUpdate, queue);
-    await publishStudentNotifications(queueStudents, queueName, pubSub);
+    await Promise.all([
+      pubSub.publish(SubscriptionTopics.queueUpdate, queue),
+      publishStudentNotifications(queueStudents, queueName, pubSub),
+      publishQueueFilterUpdate(queue, pubSub),
+    ]);
     return queue;
   }
 
@@ -69,9 +74,12 @@ export class QueueResolver {
     if (!firstStudentToQueue) throw new Error('Queue is empty!');
     firstStudentToQueue.status = isPassed ? StatusEnum.passed : StatusEnum.declined;
     await this.studentToQueueRepository.save(firstStudentToQueue);
-    await pubSub.publish(SubscriptionTopics.queueUpdate, queue);
     const queueStudents = await queue.students();
-    await publishStudentNotifications(queueStudents, queueName, pubSub);
+    await Promise.all([
+      pubSub.publish(SubscriptionTopics.queueUpdate, queue),
+      publishStudentNotifications(queueStudents, queueName, pubSub),
+      publishQueueFilterUpdate(queue, pubSub),
+    ]);
     return queue;
   }
 
@@ -82,5 +90,20 @@ export class QueueResolver {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   queueUpdate(@Root() queueUpdatePayload: Queue, @Arg('queueName') queueName: string): Queue {
     return queueUpdatePayload;
+  }
+
+  @Subscription({
+    topics: SubscriptionTopics.queueFilterUpdate,
+    filter: ({ payload, args }) => payload.queueId === args.filterInput.queueId,
+  })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  queueUpdateFilter(@Root() queueUpdateFilterPayload: QueueUpdateFilterPayload, @Arg('filterInput') filterInput: QueueUpdateFilterInput): QueueUpdateFilterPayload {
+    return {
+      ...queueUpdateFilterPayload,
+      upcomingStudentToQueues: queueUpdateFilterPayload.upcomingStudentToQueues
+        .slice(0, filterInput.upcomingLimit),
+      historyStudentToQueues: queueUpdateFilterPayload.historyStudentToQueues
+        .slice(0, filterInput.historyLimit),
+    };
   }
 }

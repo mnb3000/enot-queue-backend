@@ -9,7 +9,7 @@ import { StudentInput } from './types/student.input';
 import { SubscriptionTopics } from './types/subscriptionTopics';
 import { StudentUpdatePayload } from './types/studentUpdate.payload';
 import { StatusEnum } from './types/status.enum';
-import { publishStudentNotifications } from '../helpers';
+import { publishStudentNotifications, publishQueueFilterUpdate } from '../helpers';
 
 @Resolver(Student)
 export class StudentResolver {
@@ -59,7 +59,10 @@ export class StudentResolver {
     await this.studentToQueueRepository.save(studentToQueue);
     const updatedStudent = this.studentRepository.findOneOrFail(student.id);
     queue.studentToQueues = [...queueStudentToQueues, studentToQueue];
-    await pubSub.publish(SubscriptionTopics.queueUpdate, queue);
+    await Promise.all([
+      pubSub.publish(SubscriptionTopics.queueUpdate, queue),
+      publishQueueFilterUpdate(queue, pubSub),
+    ]);
     return updatedStudent;
   }
 
@@ -85,8 +88,11 @@ export class StudentResolver {
     studentToQueues[queueIndex].status = StatusEnum.left;
     await this.studentToQueueRepository.save(studentToQueues[queueIndex]);
     const queueStudents = await queue.students();
-    await publishStudentNotifications(queueStudents, queueName, pubSub);
-    await pubSub.publish(SubscriptionTopics.queueUpdate, queue);
+    await Promise.all([
+      pubSub.publish(SubscriptionTopics.queueUpdate, queue),
+      publishStudentNotifications(queueStudents, queueName, pubSub),
+      publishQueueFilterUpdate(queue, pubSub),
+    ]);
     return student;
   }
 
