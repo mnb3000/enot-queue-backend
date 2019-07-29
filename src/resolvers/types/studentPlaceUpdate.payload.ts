@@ -3,7 +3,7 @@ import { QueuePlaceType } from './queuePlace.type';
 import { Student } from '../../entities';
 
 @ObjectType()
-export class StudentUpdatePayload extends QueuePlaceType {
+export class StudentPlaceUpdatePayload extends QueuePlaceType {
   @Field(() => Student)
   student!: Student;
 }

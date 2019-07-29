@@ -7,9 +7,10 @@ import { find } from 'lodash';
 import { Queue, Student, StudentToQueue } from '../entities';
 import { StudentInput } from './types/student.input';
 import { SubscriptionTopics } from './types/subscriptionTopics.enum';
-import { StudentUpdatePayload } from './types/studentUpdate.payload';
+import { StudentPlaceUpdatePayload } from './types/studentPlaceUpdate.payload';
 import { StatusEnum } from './types/status.enum';
 import { publishStudentNotifications, publishQueueFilterUpdate } from '../helpers';
+import { StudentPassedPayload } from './types/studentPassed.payload';
 
 @Resolver(Student)
 export class StudentResolver {
@@ -101,10 +102,10 @@ export class StudentResolver {
     filter: ({ payload, args }) => payload.place === args.notifyPlace,
   })
   notifyStudentPlace(
-    @Root() studentUpdatePayload: StudentUpdatePayload,
+    @Root() studentUpdatePayload: StudentPlaceUpdatePayload,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @Arg('notifyPlace', () => Int) place: number,
-  ): StudentUpdatePayload {
+  ): StudentPlaceUpdatePayload {
     return studentUpdatePayload;
   }
 
@@ -112,8 +113,8 @@ export class StudentResolver {
     topics: SubscriptionTopics.studentPassed,
   })
   notifyStudentPassed(
-    @Root() studentUpdatePayload: StudentUpdatePayload,
-  ): StudentUpdatePayload {
+    @Root() studentUpdatePayload: StudentPassedPayload,
+  ): StudentPassedPayload {
     return studentUpdatePayload;
   }
 }

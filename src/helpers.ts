@@ -85,6 +85,7 @@ export async function publishStudentPassedNotification(
   const queuePlaces = await student.queuePlaces();
   const payload = {
     ...find(queuePlaces, { queueName: queue.name }),
+    passed: studentToQueue.status === StatusEnum.passed,
     place: 0,
     student,
   };
