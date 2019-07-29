@@ -5,6 +5,7 @@ import { Queue, Student, StudentToQueue } from './entities';
 import { StatusEnum } from './resolvers/types/status.enum';
 import { SubscriptionTopics } from './resolvers/types/subscriptionTopics';
 import { QueueUpdateFilterPayload } from './resolvers/types/queueUpdateFilter.payload';
+import { QueuePlaceType } from './resolvers/types/queuePlace.type';
 
 export async function seedDatabase() {
   const studentRepository = getRepository(Student);
@@ -61,14 +62,18 @@ export async function publishStudentNotifications(
   queueName: string,
   pubSub: PubSubEngine,
 ) {
-  queueStudents.forEach(async queueStudent => {
-    const queuePlaces = await queueStudent.queuePlaces();
-    const payload = {
-      ...find(queuePlaces, { queueName }),
+  const allQueuePlaces: QueuePlaceType[][] = await Promise.all(queueStudents.map(
+    queueStudent => queueStudent.queuePlaces(),
+  ));
+  const payloads = queueStudents.map(
+    (queueStudent, i) => ({
+      ...find(allQueuePlaces[i], { queueName }),
       student: queueStudent,
-    };
-    await pubSub.publish(SubscriptionTopics.studentUpdate, payload);
-  });
+    }),
+  );
+  await Promise.all(payloads.map(
+    payload => pubSub.publish(SubscriptionTopics.studentUpdate, payload),
+  ));
 }
 
 export async function generateQueueFilterPayload(queueId: string):
