@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { find } from 'lodash';
 import { Queue, Student, StudentToQueue } from '../entities';
 import { StudentInput } from './types/student.input';
-import { SubscriptionTopics } from './types/subscriptionTopics';
+import { SubscriptionTopics } from './types/subscriptionTopics.enum';
 import { StudentUpdatePayload } from './types/studentUpdate.payload';
 import { StatusEnum } from './types/status.enum';
 import { publishStudentNotifications, publishQueueFilterUpdate } from '../helpers';
@@ -57,7 +57,7 @@ export class StudentResolver {
       queue,
     });
     await this.studentToQueueRepository.save(studentToQueue);
-    const updatedStudent = this.studentRepository.findOneOrFail(student.id);
+    const updatedStudent = await this.studentRepository.findOneOrFail(student.id);
     queue.studentToQueues = [...queueStudentToQueues, studentToQueue];
     await Promise.all([
       pubSub.publish(SubscriptionTopics.queueUpdate, queue),
@@ -104,6 +104,15 @@ export class StudentResolver {
     @Root() studentUpdatePayload: StudentUpdatePayload,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @Arg('notifyPlace', () => Int) place: number,
+  ): StudentUpdatePayload {
+    return studentUpdatePayload;
+  }
+
+  @Subscription({
+    topics: SubscriptionTopics.studentPassed,
+  })
+  notifyStudentPassed(
+    @Root() studentUpdatePayload: StudentUpdatePayload,
   ): StudentUpdatePayload {
     return studentUpdatePayload;
   }

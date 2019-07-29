@@ -6,9 +6,14 @@ import { Repository } from 'typeorm';
 import { findIndex } from 'lodash';
 import { Queue, Student, StudentToQueue } from '../entities';
 import { QueueInput } from './types/queue.input';
-import { SubscriptionTopics } from './types/subscriptionTopics';
+import { SubscriptionTopics } from './types/subscriptionTopics.enum';
 import { StatusEnum } from './types/status.enum';
-import { publishStudentNotifications, publishQueueFilterUpdate, generateQueueFilterPayload } from '../helpers';
+import {
+  publishStudentNotifications,
+  publishQueueFilterUpdate,
+  generateQueueFilterPayload,
+  publishStudentPassedNotification,
+} from '../helpers';
 import { QueueUpdateFilterPayload } from './types/queueUpdateFilter.payload';
 import { QueueUpdateFilterInput } from './types/queueUpdateFilter.input';
 
@@ -78,6 +83,7 @@ export class QueueResolver {
     const firstStudentToQueue = studentToQueues[0];
     if (!firstStudentToQueue) throw new Error('Queue is empty!');
     firstStudentToQueue.status = isPassed ? StatusEnum.passed : StatusEnum.declined;
+    await publishStudentPassedNotification(firstStudentToQueue, pubSub);
     await this.studentToQueueRepository.save(firstStudentToQueue);
     const queueStudents = await queue.students();
     await Promise.all([

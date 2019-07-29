@@ -3,7 +3,7 @@ import { PubSubEngine } from 'type-graphql';
 import { getRepository } from 'typeorm';
 import { Queue, Student, StudentToQueue } from './entities';
 import { StatusEnum } from './resolvers/types/status.enum';
-import { SubscriptionTopics } from './resolvers/types/subscriptionTopics';
+import { SubscriptionTopics } from './resolvers/types/subscriptionTopics.enum';
 import { QueueUpdateFilterPayload } from './resolvers/types/queueUpdateFilter.payload';
 import { QueuePlaceType } from './resolvers/types/queuePlace.type';
 
@@ -74,6 +74,21 @@ export async function publishStudentNotifications(
   await Promise.all(payloads.map(
     payload => pubSub.publish(SubscriptionTopics.studentUpdate, payload),
   ));
+}
+
+export async function publishStudentPassedNotification(
+  studentToQueue: StudentToQueue,
+  pubSub: PubSubEngine,
+) {
+  const student = await studentToQueue.student;
+  const queue = await studentToQueue.queue;
+  const queuePlaces = await student.queuePlaces();
+  const payload = {
+    ...find(queuePlaces, { queueName: queue.name }),
+    place: 0,
+    student,
+  };
+  await pubSub.publish(SubscriptionTopics.studentPassed, payload);
 }
 
 export async function generateQueueFilterPayload(queueId: string):
