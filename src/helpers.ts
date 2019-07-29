@@ -71,27 +71,32 @@ export async function publishStudentNotifications(
   });
 }
 
-export async function publishQueueFilterUpdate(queue: Queue, pubSub: PubSubEngine) {
+export async function generateQueueFilterPayload(queueId: string):
+Promise<QueueUpdateFilterPayload> {
   const studentToQueueRepository = getRepository(StudentToQueue);
   const builder = studentToQueueRepository
     .createQueryBuilder('studentToQueue')
-    .leftJoinAndSelect('studentToQueue.queue', 'queue', 'queue.id = :queueId', { queueId: queue.id });
+    .leftJoinAndSelect('studentToQueue.queue', 'queue', 'queue.id = :queueId', { queueId });
   const upcomingStudentToQueues = await builder
-    .where('studentToQueue.queueId = :queueId', { queueId: queue.id })
+    .where('studentToQueue.queueId = :queueId', { queueId })
     .andWhere('studentToQueue.status = :status', { status: StatusEnum.inQueue })
     .orderBy('studentToQueue.createdAt', 'ASC')
     .take(10)
     .getMany();
   const historyStudentToQueues = await builder
-    .where('studentToQueue.queueId = :queueId', { queueId: queue.id })
+    .where('studentToQueue.queueId = :queueId', { queueId })
     .andWhere('studentToQueue.status != :status', { status: StatusEnum.inQueue })
     .orderBy('studentToQueue.updatedAt', 'DESC')
     .take(10)
     .getMany();
-  const payload: QueueUpdateFilterPayload = {
-    queueId: queue.id,
+  return {
+    queueId,
     upcomingStudentToQueues,
     historyStudentToQueues,
   };
+}
+
+export async function publishQueueFilterUpdate(queue: Queue, pubSub: PubSubEngine) {
+  const payload = await generateQueueFilterPayload(queue.id);
   await pubSub.publish(SubscriptionTopics.queueFilterUpdate, payload);
 }

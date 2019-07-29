@@ -8,7 +8,7 @@ import { Queue, Student, StudentToQueue } from '../entities';
 import { QueueInput } from './types/queue.input';
 import { SubscriptionTopics } from './types/subscriptionTopics';
 import { StatusEnum } from './types/status.enum';
-import { publishStudentNotifications, publishQueueFilterUpdate } from '../helpers';
+import { publishStudentNotifications, publishQueueFilterUpdate, generateQueueFilterPayload } from '../helpers';
 import { QueueUpdateFilterPayload } from './types/queueUpdateFilter.payload';
 import { QueueUpdateFilterInput } from './types/queueUpdateFilter.input';
 
@@ -29,6 +29,11 @@ export class QueueResolver {
   @Query(() => [Queue])
   queues(): Promise<Queue[]> {
     return this.queueRepository.find();
+  }
+
+  @Query(() => QueueUpdateFilterPayload)
+  queueFilter(@Arg('filterInput') filterInput: QueueUpdateFilterInput): Promise<QueueUpdateFilterPayload> {
+    return generateQueueFilterPayload(filterInput.queueId);
   }
 
   @Mutation(() => Queue)

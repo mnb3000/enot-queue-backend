@@ -5,6 +5,7 @@ export enum StatusEnum {
   passed = 'PASSED',
   declined = 'DECLINED',
   left = 'LEFT',
+  current = 'CURRENT',
 }
 
 registerEnumType(StatusEnum, {
