@@ -31,6 +31,11 @@ export class QueueResolver {
     return this.queueRepository.findOne({ name });
   }
 
+  @Query(() => Queue, { nullable: true })
+  queueById(@Arg('id') id: string): Promise<Queue | undefined> {
+    return this.queueRepository.findOne({ id });
+  }
+
   @Query(() => [Queue])
   queues(): Promise<Queue[]> {
     return this.queueRepository.find();
@@ -96,10 +101,10 @@ export class QueueResolver {
 
   @Subscription({
     topics: SubscriptionTopics.queueUpdate,
-    filter: ({ payload, args }) => payload.name === args.queueName,
+    filter: ({ payload, args }) => payload.id === args.id,
   })
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  queueUpdate(@Root() queueUpdatePayload: Queue, @Arg('queueName') queueName: string): Queue {
+  queueUpdate(@Root() queueUpdatePayload: Queue, @Arg('id') id: string): Queue {
     return queueUpdatePayload;
   }
 
