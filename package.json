@@ -1,5 +1,6 @@
 {
-  "name": "graphql-auth",
+  "name": "@enot-queue/backend",
+  "version": "1.0.0",
   "license": "MIT",
   "scripts": {
     "start": "ts-node-dev --no-notify --respawn --transpileOnly ./src",
